@@ -67,3 +67,10 @@ from rosmaster.masther_api import service_update_task
 ###################################################
 # Master Implementation
 from rosmaster.masther_api import ROSMasterHandler
+
+class GoblinShadowHandler(ROSMasterHandler):
+    """
+    Goblin Shadow handler is a client-side local proxy of the original ROS Master.
+    This additional intermediary provides some key features with slight overhead.
+    """
+    pass
