@@ -25,7 +25,7 @@ from rosmaster.validators import non_empty, non_empty_str, not_none, is_api, is_
 NUM_WORKERS = 3 #number of threads we use to send publisher_update notifications
 
 # import original return code slots
-from rosmaster.masther_api import STATUS, MSG, VAL
+from rosmaster.master_api import STATUS, MSG, VAL
 
 # keep logging functions 
 _logger = logging.getLogger("goblin.shadow")
@@ -58,19 +58,52 @@ def mlogwarn(msg, *args):
         print("WARN: " + str(msg))
 
 # import apivalidate
-import rosmaster.masther_api.apivalidate
+from rosmaster.master_api import apivalidate
 
 # import update tasks
-from rosmaster.masther_api import publisher_update_task
-from rosmaster.masther_api import service_update_task
+from rosmaster.master_api import publisher_update_task
+from rosmaster.master_api import service_update_task
+
+# import shadow configuration
+from rosshadow.configuration import load_shadow_config
+
+swcfg = load_shadow_config()
 
 ###################################################
 # Master Implementation
-from rosmaster.masther_api import ROSMasterHandler
+from rosmaster.master_api import ROSMasterHandler
 
 class GoblinShadowHandler(ROSMasterHandler):
     """
     Goblin Shadow handler is a client-side local proxy of the original ROS Master.
     This additional intermediary provides some key features with slight overhead.
     """
-    pass
+    @apivalidate(0, (is_service('service'),))
+    def lookupService(self, caller_id, service):
+        """
+        Lookup all provider of a particular service in following rules:
+        1. Local/Auto/Unlabeled
+            1. Use local services if possible.
+            2. Otherwise, use remote services.
+        2. Remote
+            1. If average time cost belows the balance-curve, use remote services.
+            2. Otherwise, use remote services if possible.
+        @param caller_id str: ROS caller id
+        @type  caller_id: str
+        @param service: fully-qualified name of service to lookup.
+        @type: service: str
+        @return: (code, message, serviceUrl). service URL is provider's
+        ROSRPC URI with address and port.  Fails if there is no provider.
+        @rtype: (int, str, str)
+        """
+        response = (-1, '[Goblin][Shadow] Internal Failure', None)
+        with self.ps_lock:
+            cfg = swcfg.services.get_config(service)
+            # try local
+            if swcfg.localtype == cfg.priority:
+                print(service)
+            # fallback?
+            elif cfg.fallback:
+                if cfg is True:
+                    pass
+        return response
