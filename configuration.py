@@ -55,16 +55,13 @@ class ServiceConfiguration:
             }
 
     def __init__(self, regex=None, obj=None):
-        if regex is None:
-            self._regex = None
-        else:
-            self._regex = re.compile(_regex)
+        _regex = regex if regex is not None else '.*'
+        self._regex = re.compile(_regex, re.UNICODE)
         if obj is None:
-            obj = DEFALUT
-        else:
-            self.fallback = obj.get(FALLBACK,   DEFALUT[FALLBACK])
-            self.priority = obj.get(PRIORITY,   DEFALUT[PRIORITY])
-            self.recursive = obj.get(RECURSIVE, DEFALUT[RECURSIVE])
+            obj = ServiceConfiguration.DEFALUT
+        self.fallback = obj.get(FALLBACK,   ServiceConfiguration.DEFALUT[FALLBACK])
+        self.priority = obj.get(PRIORITY,   ServiceConfiguration.DEFALUT[PRIORITY])
+        self.recursive = obj.get(RECURSIVE, ServiceConfiguration.DEFALUT[RECURSIVE])
 
     def is_match(self, name):
         """
@@ -75,15 +72,20 @@ class ServiceConfiguration:
         else:
             return self._regex.match(name)
 
+    def __repr__(self):
+        return '<ServiceConfiguration {}>'.format(self._regex.pattern)
+
     @staticmethod
     def default():
-        return ServiceConfiguration(ServiceConfiguration.DEFALUT)
+        return ServiceConfiguration()
 
 class ServiceConfigurations:
     def __init__(self, objs=None):
         if objs is None:
             objs = []
-        self.routines = objs
+        self.routines = []
+        for regex, obj in objs.items():
+            self.routines.append(ServiceConfiguration(regex, obj))
 
     def get_config(self, name):
         for cfg in self.routines:
