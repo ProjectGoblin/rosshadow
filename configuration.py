@@ -45,6 +45,7 @@ FALLBACK = "fallback"
 RECURSIVE = "recursive"
 REMOTE   = "remote"
 LOCAL    = "local"
+LOCALTYPE = "localtype"
 
 
 class ServiceConfiguration:
@@ -102,6 +103,7 @@ class ServiceConfigurations:
 class Configuration:
     def __init__(self, obj):
         self.services = ServiceConfigurations(obj.get(SERVICES, None))
+        self.localtype = obj.get(LOCALTYPE, LOCAL)
 
     @staticmethod
     def default():
