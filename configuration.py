@@ -1,0 +1,123 @@
+"""
+ROS Shadow Configuration Parser, supporting JSON & YAML.
+
+Example:
+
+default_configuration: &default
+    priority: local # local or remote
+    fallback: No    # Yes/No for (en/dis)able, or a list of alternative services.
+    config-dependency: Yes # chose Yes if you want to rule any dependency as while.
+
+services:
+  - ros*: # Yes, with full-regex supporting. :P
+      <<: *default
+
+  - AddInts:
+      <<: *default
+      fallback: 
+        - sum
+  - sum:
+      priority: remote
+      fallback: true
+
+  - GetMap3D:
+      priority: remote
+      fallback: false
+"""
+import rospkg
+import json
+import yaml
+import threading
+import re
+import os
+from os import environ
+import sys
+
+rp = rospkg.RosPack
+rp_lock = threading.Lock()
+
+"""
+Reserved keywords for Shadow Configuration
+"""
+SERVICES = "services"
+PRIORITY = "priority"
+FALLBACK = "fallback"
+RECURSIVE = "recursive"
+REMOTE   = "remote"
+LOCAL    = "local"
+
+
+class ServiceConfiguration:
+    DEFALUT = {
+            FALLBACK: True,
+            PRIORITY: REMOTE,
+            RECURSIVE: True
+            }
+
+    def __init__(self, regex=None, obj=None):
+        if regex is None:
+            self._regex = None
+        else:
+            self._regex = re.compile(_regex)
+        if obj is None:
+            obj = DEFALUT
+        else:
+            self.fallback = obj.get(FALLBACK,   DEFALUT[FALLBACK])
+            self.priority = obj.get(PRIORITY,   DEFALUT[PRIORITY])
+            self.recursive = obj.get(RECURSIVE, DEFALUT[RECURSIVE])
+
+    def is_match(self, name):
+        """
+        Detect if a name matches this rule.
+        """
+        if self._regex is None:
+            return True
+        else:
+            return self._regex.match(name)
+
+    @staticmethod
+    def default():
+        return ServiceConfiguration(ServiceConfiguration.DEFALUT)
+
+class ServiceConfigurations:
+    def __init__(self, objs=None):
+        if objs is None:
+            objs = []
+        self.routines = objs
+
+    def get_config(self, name):
+        for cfg in self.routines:
+            if cfg.is_match(name):
+                return cfg
+        else:
+            # Use defaule configuration as a backup
+            return ServiceConfiguration.default()
+
+    @staticmethod
+    def default():
+        return ServiceConfigurations()
+
+class Configuration:
+    def __init__(self, obj):
+        self.services = ServiceConfigurations(obj.get(SERVICES, None))
+
+    @staticmethod
+    def default():
+        return Configuration({})
+
+
+def load_shadow_config():
+    """
+    Load shadow.(yaml|json). Use default configuration if file not exist.
+    """
+    root = environ.get('SHADOW_CONFIG_PATH',
+                       environ.get('SHADOW_ROOT',
+                                   environ.get('PWD', os.curdir)))
+    for suffix, loader in [('yaml', yaml.load), ('json', json.load)]:
+        fullpath = os.path.join(root, 'shadow.' + suffix)
+        if os.path.exists(fullpath):
+            with open(fullpath, 'r') as stream:
+                obj = loader(stream)
+                return Configuration(obj)
+    return Configuration.default()
+
