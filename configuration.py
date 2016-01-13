@@ -83,7 +83,7 @@ class ServiceConfiguration:
 class ServiceConfigurations:
     def __init__(self, objs=None):
         if objs is None:
-            objs = []
+            objs = {}
         self.routines = []
         for regex, obj in objs.items():
             self.routines.append(ServiceConfiguration(regex, obj))
