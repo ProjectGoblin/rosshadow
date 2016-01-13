@@ -69,16 +69,41 @@ from rosshadow.configuration import load_shadow_config
 
 swcfg = load_shadow_config()
 
+# import XML-RPC to connect ROS Master
+import xmlrpclib
+
 ###################################################
 # Master Implementation
 from rosmaster.master_api import ROSMasterHandler
+
+METHODS = {}
+def overwrite(fn):
+    METHODS[fn.__name__] = fn
+    return fn
 
 class GoblinShadowHandler(ROSMasterHandler):
     """
     Goblin Shadow handler is a client-side local proxy of the original ROS Master.
     This additional intermediary provides some key features with slight overhead.
     """
+
+    def __init__(self, master_uri, *args, **kwargs):
+        super(GoblinShadowHandler, self).__init__(*args, **kwargs)
+        self.master_proxy = xmlrpclib.ServerProxy(master_uri)
+    
+    def _dispatch(self, method, params):
+        """
+        Dispatch not-covered method to original ROS Master
+        """
+        print('{}{}'.format(method, params), '@', METHODS)
+        if method in METHODS:
+            code, explain, value = METHODS[method](self, *params)
+        else:
+            code, explain, value = getattr(self.master_proxy, method)(*params)
+        return code, explain, value
+
     @apivalidate(0, (is_service('service'),))
+    @overwrite
     def lookupService(self, caller_id, service):
         """
         Lookup all provider of a particular service in following rules:
@@ -96,7 +121,9 @@ class GoblinShadowHandler(ROSMasterHandler):
         ROSRPC URI with address and port.  Fails if there is no provider.
         @rtype: (int, str, str)
         """
-        response = (-1, '[Goblin][Shadow] Internal Failure', None)
+        response = (-1,
+                    '[Goblin][Shadow] Unknown service provider: {}'.format(service),
+                    r'')
         with self.ps_lock:
             cfg = swcfg.services.get_config(service)
             # try local
@@ -107,3 +134,4 @@ class GoblinShadowHandler(ROSMasterHandler):
                 if cfg is True:
                     pass
         return response
+
