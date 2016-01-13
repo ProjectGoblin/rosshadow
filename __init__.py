@@ -1,3 +1,3 @@
 from .main import rosshadow_main
-from .master import DEFAULT_MASTER_PORT, DEFAULT_SHADOW_PORT
+from .shadow import DEFAULT_MASTER_PORT, DEFAULT_SHADOW_PORT
 

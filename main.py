@@ -6,12 +6,12 @@ import sys
 import time
 import optparse
 
-import rosshadow.master
-from rosshadow.master_api import NUM_WORKERS
+import rosshadow.shadow
+from rosshadow.shadow_api import NUM_WORKERS
 
 def configure_logging():
     """
-    Setup filesystem logging for the master
+    Setup filesystem logging for the shadow
     """
     filename = 'shadow.log'
     # #988 __log command-line remapping argument
@@ -45,27 +45,9 @@ def rosshadow_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
             parser.error("unrecognized arg: %s"%arg)
     configure_logging()   
     
-    port = rosshadow.master.DEFAULT_MASTER_PORT
+    port = rosshadow.shadow.DEFAULT_SHADOW_PORT
     if options.port:
         port = int(options.port)
-
-    if not options.core:
-        print("""
-
-
-ACHTUNG WARNING ACHTUNG WARNING ACHTUNG
-WARNING ACHTUNG WARNING ACHTUNG WARNING
-
-
-Standalone zenmaster has been deprecated, please use 'glcore' instead
-
-
-ACHTUNG WARNING ACHTUNG WARNING ACHTUNG
-WARNING ACHTUNG WARNING ACHTUNG WARNING
-
-
-""")
-
     logger = logging.getLogger("rosshadow.main")
     logger.info("initialization complete, waiting for shutdown")
 
@@ -76,17 +58,17 @@ WARNING ACHTUNG WARNING ACHTUNG WARNING
 
     try:
         logger.info("Starting Goblin Shadown Node")
-        master = rosshadow.master.Master(port, options.num_workers)
-        master.start()
+        shadow = rosshadow.shadow.Shadow(port, options.num_workers)
+        shadow.start()
 
         import time
-        while master.ok():
+        while shadow.ok():
             time.sleep(.1)
     except KeyboardInterrupt:
         logger.info("keyboard interrupt, will exit")
     finally:
-        logger.info("stopping master...")
-        master.stop()
+        logger.info("stopping shadow...")
+        shadow.stop()
 
 if __name__ == "__main__":
-    main()
+    rosshadow_main()
