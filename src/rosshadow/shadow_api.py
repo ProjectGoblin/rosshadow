@@ -14,6 +14,7 @@ from rosmaster.validators import is_service
 from rosmaster.registrations import RegistrationManager
 from rosmaster.threadpool import MarkedThreadPool
 from rosshadow.response import ResponseFactory
+from rosshadow.combinator import *
 
 from rosshadow.configuration import load_shadow_config
 
@@ -73,6 +74,7 @@ class GoblinShadowHandler(object):
         # Running status
         self.shadow_uri = None
         self.master_uri = master_uri
+        self._caller_id = '/Goblin/Shadow/unbind'
         self._running = True
 
         # Inner fields
@@ -104,24 +106,36 @@ class GoblinShadowHandler(object):
         @return:
         """
         self.shadow_uri = uri
+        self._caller_id = '/Goblin/Shadow/unbind_{}'.format(uri)
 
     def _dispatch(self, method, params):
         """
         Dispatch not-covered method to original ROS Master
         """
-        print('{}{}'.format(method, params), '@', METHODS)
+        print('-> {}{}'.format(method, params))
         if method in METHODS:
-            code, explain, value = METHODS[method](self, *params)
+            print('--  LOCAL')
+            status, msg, value = METHODS[method](self, *params)
+            print('>>  LOCAL {}'.format((status, msg, value)))
         else:
-            code, explain, value = getattr(self.master_proxy, method)(*params)
-        return code, explain, value
+            print('-- REMOTE @ {!r}'.format(getattr(self.master_proxy, method)))
+            status, msg, value = getattr(self.master_proxy, method)(*params)
+            print('>> REMOTE {}'.format((status, msg, value)))
+        return status, msg, value
 
     def is_running(self):
         return self._running
 
     # private methods for running Shadow
     def _lookup_local_service(self, service):
-        pass
+        uri = None
+        with self.ps_lock:
+            uri = self.services.get_service_api(service)
+        return uri
+
+    def _lookup_remote_service(self, service):
+        return self.master_proxy.lookupService(self._caller_id, service)
+
 
     # Overwritten APIs
     @apivalidate(0, (is_service('service'),))
@@ -143,14 +157,21 @@ class GoblinShadowHandler(object):
         ROSRPC URI with address and port.  Fails if there is no provider.
         @rtype: (int, str, str)
         """
-        response = ResponseFactory.unknown_service()
-        with self.ps_lock:
-            cfg = swcfg.services.get_config(service)
-            # try local
-            if swcfg.localtype == cfg.priority:
-                print(service)
-            # fallback?
-            elif cfg.fallback:
-                if cfg is True:
-                    pass
-        return response.pack()
+        uri = None
+        cfg = swcfg.services.get_config(service)
+
+        def skeleton(x, y):
+            fallback_p = const(bool(cfg.fallback))
+            # TODO: support fallback list
+            return on_fallback(x, y, fallback_p, success_uri)
+
+        # local?
+        if swcfg.localtype == cfg.priority:
+            fn = skeleton(self._lookup_local_service, self._lookup_remote_service)
+        else:
+            fn = skeleton(self._lookup_remote_service, self._lookup_local_service)
+        uri = fn(service)
+        if success_uri(uri):
+            return ResponseFactory.uri_found(service, uri).pack()
+        else:
+            return ResponseFactory.unknown_service().pack()
