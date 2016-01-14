@@ -7,6 +7,7 @@ from __future__ import print_function
 import logging
 import threading
 import xmlrpclib
+import socket
 
 from rosmaster.master_api import apivalidate
 from rosmaster.validators import is_service
@@ -68,13 +69,14 @@ class GoblinShadowHandler(object):
     This additional intermediary provides some key features with slight overhead.
     """
 
-    def __init__(self, master_uri, num_works):
+    def __init__(self, master_uri, num_works, timeout=None):
         # Running status
         self.shadow_uri = None
         self.master_uri = master_uri
         self._running = True
 
         # Inner fields
+        socket.setdefaulttimeout(timeout)
         self.thread_pool = MarkedThreadPool(num_works)
         self.ps_lock = threading.Condition(threading.Lock())
         self.reg_manager = RegistrationManager(self.thread_pool)
