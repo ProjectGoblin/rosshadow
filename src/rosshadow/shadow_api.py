@@ -10,6 +10,7 @@ import xmlrpclib
 from rosmaster.master_api import ROSMasterHandler
 from rosmaster.master_api import apivalidate
 from rosmaster.validators import is_service
+from rosshadow.response import ResponseFactory
 
 from rosshadow.configuration import load_shadow_config
 
@@ -99,9 +100,7 @@ class GoblinShadowHandler(ROSMasterHandler):
         ROSRPC URI with address and port.  Fails if there is no provider.
         @rtype: (int, str, str)
         """
-        response = (-1,
-                    '[Goblin][Shadow] Unknown service provider: {}'.format(service),
-                    r'')
+        response = ResponseFactory.unknown_service()
         with self.ps_lock:
             cfg = swcfg.services.get_config(service)
             # try local
@@ -111,4 +110,4 @@ class GoblinShadowHandler(ROSMasterHandler):
             elif cfg.fallback:
                 if cfg is True:
                     pass
-        return response
+        return response.pack()
