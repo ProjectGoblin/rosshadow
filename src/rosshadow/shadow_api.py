@@ -5,11 +5,13 @@ Gobline ROS Shadow API.
 from __future__ import print_function
 
 import logging
+import threading
 import xmlrpclib
 
-from rosmaster.master_api import ROSMasterHandler
 from rosmaster.master_api import apivalidate
 from rosmaster.validators import is_service
+from rosmaster.registrations import RegistrationManager
+from rosmaster.threadpool import MarkedThreadPool
 from rosshadow.response import ResponseFactory
 
 from rosshadow.configuration import load_shadow_config
@@ -60,15 +62,46 @@ def overwrite(fn):
     return fn
 
 
-class GoblinShadowHandler(ROSMasterHandler):
+class GoblinShadowHandler(object):
     """
     Goblin Shadow handler is a client-side local proxy of the original ROS Master.
     This additional intermediary provides some key features with slight overhead.
     """
 
-    def __init__(self, master_uri, *args, **kwargs):
-        super(GoblinShadowHandler, self).__init__(*args, **kwargs)
+    def __init__(self, master_uri, num_works):
+        # Running status
+        self.shadow_uri = None
+        self.master_uri = master_uri
+        self._running = True
+
+        # Inner fields
+        self.thread_pool = MarkedThreadPool(num_works)
+        self.ps_lock = threading.Condition(threading.Lock())
+        self.reg_manager = RegistrationManager(self.thread_pool)
         self.master_proxy = xmlrpclib.ServerProxy(master_uri)
+        # TODO: support all local nodes
+        self.services = self.reg_manager.services
+        # TODO: support local param-server caches
+
+    # APIs for running XML-RPC
+    def _shutdown(self, reason=''):
+        """
+        Forked from ROSMasterHandler
+        @param reason:
+        @return:
+        """
+        if self.thread_pool is not None:
+            self.thread_pool.join_all(wait_for_tasks=False, wait_for_threads=False)
+            self.thread_pool = None
+        self._running = False
+
+    def _ready(self, uri):
+        """
+        Impl standard XML-RPC API to update URI
+        @param uri:
+        @return:
+        """
+        self.shadow_uri = uri
 
     def _dispatch(self, method, params):
         """
@@ -81,6 +114,14 @@ class GoblinShadowHandler(ROSMasterHandler):
             code, explain, value = getattr(self.master_proxy, method)(*params)
         return code, explain, value
 
+    def is_running(self):
+        return self._running
+
+    # private methods for running Shadow
+    def _lookup_local_service(self, service):
+        pass
+
+    # Overwritten APIs
     @apivalidate(0, (is_service('service'),))
     @overwrite
     def lookupService(self, caller_id, service):

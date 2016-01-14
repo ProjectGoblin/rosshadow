@@ -51,9 +51,9 @@ class Shadow(object):
 
         logging.getLogger('goblin.shadow').info("Shadow initialized: port[%s], uri[%s]", self.port, self.uri)
 
-    def ok(self):
+    def is_running(self):
         if self.shadow_node is not None:
-            return self.shadow_node.handler.ok()
+            return self.shadow_node.handler.is_running()
         else:
             return False
 
