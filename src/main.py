@@ -3,7 +3,6 @@
 import logging
 import os
 import sys
-import time
 import optparse
 
 import rosshadow.shadow
@@ -15,7 +14,6 @@ def configure_logging():
     Setup filesystem logging for the shadow
     """
     filename = 'shadow.log'
-    # #988 __log command-line remapping argument
     import rosgraph.names
     import rosgraph.roslogging
     mappings = rosgraph.names.load_mappings(sys.argv)
@@ -50,7 +48,7 @@ def rosshadow_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
     port = rosshadow.shadow.DEFAULT_SHADOW_PORT
     if options.port:
         port = int(options.port)
-    logger = logging.getLogger("rosshadow.main")
+    logger = logging.getLogger("shadow.main")
     logger.info("initialization complete, waiting for shutdown")
 
     if options.timeout is not None and float(options.timeout) >= 0.0:
@@ -64,13 +62,14 @@ def rosshadow_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
         shadow.start()
 
         import time
-        while shadow.ok():
+        while shadow.is_running():
             time.sleep(.1)
     except KeyboardInterrupt:
         logger.info("keyboard interrupt, will exit")
+    else:
+        shadow.stop()
     finally:
         logger.info("stopping shadow...")
-        shadow.stop()
 
 
 if __name__ == "__main__":
