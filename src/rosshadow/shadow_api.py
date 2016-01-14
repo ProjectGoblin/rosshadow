@@ -4,29 +4,16 @@ Gobline ROS Shadow API.
 
 from __future__ import print_function
 
-import os
-import sys
 import logging
-import threading
-import time
-import traceback
+import xmlrpclib
 
-from rosgraph.xmlrpc import XmlRpcHandler
+from rosmaster.master_api import ROSMasterHandler
+from rosmaster.master_api import apivalidate
+from rosmaster.validators import is_service
 
-import rosgraph.names
-from rosgraph.names import resolve_name
-import rosmaster.paramserver
-import rosmaster.threadpool
-
-from rosmaster.util import xmlrpcapi
-from rosmaster.registrations import RegistrationManager
-from rosmaster.validators import non_empty, non_empty_str, not_none, is_api, is_topic, is_service, valid_type_name, \
-    valid_name, empty_or_valid_name, ParameterInvalid
+from rosshadow.configuration import load_shadow_config
 
 NUM_WORKERS = 3  # number of threads we use to send publisher_update notifications
-
-# import original return code slots
-from rosmaster.master_api import STATUS, MSG, VAL
 
 # keep logging functions 
 _logger = logging.getLogger("goblin.shadow")
@@ -62,24 +49,7 @@ def mlogwarn(msg, *args):
         print("WARN: " + str(msg))
 
 
-# import apivalidate
-from rosmaster.master_api import apivalidate
-
-# import update tasks
-from rosmaster.master_api import publisher_update_task
-from rosmaster.master_api import service_update_task
-
-# import shadow configuration
-from rosshadow.configuration import load_shadow_config
-
 swcfg = load_shadow_config()
-
-# import XML-RPC to connect ROS Master
-import xmlrpclib
-
-###################################################
-# Master Implementation
-from rosmaster.master_api import ROSMasterHandler
 
 METHODS = {}
 
