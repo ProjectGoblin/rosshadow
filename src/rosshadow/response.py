@@ -30,3 +30,7 @@ class ResponseFactory:
         return Response(-1,
                         '[Goblin][Shadow] Unknown service provider: {}'.format(service),
                         r'')
+
+    @staticmethod
+    def uri_found(key, uri):
+        return Response(1, key, uri)
