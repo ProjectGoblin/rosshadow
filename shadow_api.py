@@ -20,9 +20,10 @@ import rosmaster.threadpool
 
 from rosmaster.util import xmlrpcapi
 from rosmaster.registrations import RegistrationManager
-from rosmaster.validators import non_empty, non_empty_str, not_none, is_api, is_topic, is_service, valid_type_name, valid_name, empty_or_valid_name, ParameterInvalid
+from rosmaster.validators import non_empty, non_empty_str, not_none, is_api, is_topic, is_service, valid_type_name, \
+    valid_name, empty_or_valid_name, ParameterInvalid
 
-NUM_WORKERS = 3 #number of threads we use to send publisher_update notifications
+NUM_WORKERS = 3  # number of threads we use to send publisher_update notifications
 
 # import original return code slots
 from rosmaster.master_api import STATUS, MSG, VAL
@@ -31,6 +32,8 @@ from rosmaster.master_api import STATUS, MSG, VAL
 _logger = logging.getLogger("goblin.shadow")
 
 LOG_API = False
+
+
 def mloginfo(msg, *args):
     """
     Info-level master log statements. These statements may be printed
@@ -39,8 +42,9 @@ def mloginfo(msg, *args):
     @type  msg: str
     @param args: arguments for msg if msg is a format string
     """
-    #mloginfo is in core so that it is accessible to master and masterdata
+    # mloginfo is in core so that it is accessible to master and masterdata
     _logger.info(msg, *args)
+
 
 def mlogwarn(msg, *args):
     """
@@ -50,12 +54,13 @@ def mlogwarn(msg, *args):
     @type  msg: str    
     @param args: arguments for msg if msg is a format string
     """
-    #mloginfo is in core so that it is accessible to master and masterdata
+    # mloginfo is in core so that it is accessible to master and masterdata
     _logger.warn(msg, *args)
     if args:
         print("WARN: " + msg % args)
     else:
         print("WARN: " + str(msg))
+
 
 # import apivalidate
 from rosmaster.master_api import apivalidate
@@ -77,9 +82,12 @@ import xmlrpclib
 from rosmaster.master_api import ROSMasterHandler
 
 METHODS = {}
+
+
 def overwrite(fn):
     METHODS[fn.__name__] = fn
     return fn
+
 
 class GoblinShadowHandler(ROSMasterHandler):
     """
@@ -90,7 +98,7 @@ class GoblinShadowHandler(ROSMasterHandler):
     def __init__(self, master_uri, *args, **kwargs):
         super(GoblinShadowHandler, self).__init__(*args, **kwargs)
         self.master_proxy = xmlrpclib.ServerProxy(master_uri)
-    
+
     def _dispatch(self, method, params):
         """
         Dispatch not-covered method to original ROS Master
@@ -134,4 +142,3 @@ class GoblinShadowHandler(ROSMasterHandler):
                 if cfg is True:
                     pass
         return response
-

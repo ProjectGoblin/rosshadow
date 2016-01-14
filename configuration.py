@@ -43,25 +43,25 @@ SERVICES = "services"
 PRIORITY = "priority"
 FALLBACK = "fallback"
 RECURSIVE = "recursive"
-REMOTE   = "remote"
-LOCAL    = "local"
+REMOTE = "remote"
+LOCAL = "local"
 LOCALTYPE = "localtype"
 
 
 class ServiceConfiguration:
     DEFALUT = {
-            FALLBACK: True,
-            PRIORITY: REMOTE,
-            RECURSIVE: True
-            }
+        FALLBACK: True,
+        PRIORITY: REMOTE,
+        RECURSIVE: True
+    }
 
     def __init__(self, regex=None, obj=None):
         _regex = regex if regex is not None else '.*'
         self._regex = re.compile(_regex, re.UNICODE)
         if obj is None:
             obj = ServiceConfiguration.DEFALUT
-        self.fallback = obj.get(FALLBACK,   ServiceConfiguration.DEFALUT[FALLBACK])
-        self.priority = obj.get(PRIORITY,   ServiceConfiguration.DEFALUT[PRIORITY])
+        self.fallback = obj.get(FALLBACK, ServiceConfiguration.DEFALUT[FALLBACK])
+        self.priority = obj.get(PRIORITY, ServiceConfiguration.DEFALUT[PRIORITY])
         self.recursive = obj.get(RECURSIVE, ServiceConfiguration.DEFALUT[RECURSIVE])
 
     def is_match(self, name):
@@ -79,6 +79,7 @@ class ServiceConfiguration:
     @staticmethod
     def default():
         return ServiceConfiguration()
+
 
 class ServiceConfigurations:
     def __init__(self, objs=None):
@@ -99,6 +100,7 @@ class ServiceConfigurations:
     @staticmethod
     def default():
         return ServiceConfigurations()
+
 
 class Configuration:
     def __init__(self, obj):
@@ -124,4 +126,3 @@ def load_shadow_config():
                 obj = loader(stream)
                 return Configuration(obj)
     return Configuration.default()
-

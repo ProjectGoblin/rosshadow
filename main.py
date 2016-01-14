@@ -9,6 +9,7 @@ import optparse
 import rosshadow.shadow
 from rosshadow.shadow_api import NUM_WORKERS
 
+
 def configure_logging():
     """
     Setup filesystem logging for the shadow
@@ -23,12 +24,13 @@ def configure_logging():
         filename = os.path.abspath(logfilename_remap)
     _log_filename = rosgraph.roslogging.configure_logging('[Goblin][Shadow]', logging.DEBUG, filename=filename)
 
+
 def rosshadow_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
     parser = optparse.OptionParser(usage="usage: zenmaster [options]")
     parser.add_option("--core",
                       dest="core", action="store_true", default=False,
                       help="run as core")
-    parser.add_option("-p", "--port", 
+    parser.add_option("-p", "--port",
                       dest="port", default=0,
                       help="override port", metavar="PORT")
     parser.add_option("-w", "--numworkers",
@@ -42,9 +44,9 @@ def rosshadow_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
     # only arg that zenmaster supports is __log remapping of logfilename
     for arg in args:
         if not arg.startswith('__log:='):
-            parser.error("unrecognized arg: %s"%arg)
-    configure_logging()   
-    
+            parser.error("unrecognized arg: %s" % arg)
+    configure_logging()
+
     port = rosshadow.shadow.DEFAULT_SHADOW_PORT
     if options.port:
         port = int(options.port)
@@ -69,6 +71,7 @@ def rosshadow_main(argv=sys.argv, stdout=sys.stdout, env=os.environ):
     finally:
         logger.info("stopping shadow...")
         shadow.stop()
+
 
 if __name__ == "__main__":
     rosshadow_main()
