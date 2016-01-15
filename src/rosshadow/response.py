@@ -38,3 +38,7 @@ class ResponseFactory:
     @staticmethod
     def service_reg(caller_id, service):
         return Response(1, "Registered [%s] as provider of [%s]"%(caller_id, service), 1)
+
+    @staticmethod
+    def service_unreg(caller_id, service):
+        return Response(1, "Registered [%s] as provider of [%s]"%(caller_id, service), 1)
