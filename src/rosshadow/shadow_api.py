@@ -147,6 +147,14 @@ class GoblinShadowHandler(object):
         r = self.master_proxy.registerService(*args)
         print('-- Reg Remote', r)
 
+    def _unreg_local_service(self, caller_id, service, service_api):
+        with self.ps_lock:
+            self.reg_manager.unregister_service(service, caller_id, service_api)
+
+    def _unreg_remote_service(self, *args):
+        r = self.master_proxy.unregisterService(*args)
+        print('-- Reg Remote', r)
+
     # Overwritten APIs
     @apivalidate(0, (is_service('service'),))
     @overwrite
@@ -212,3 +220,28 @@ class GoblinShadowHandler(object):
         if not cfg.is_remote_only():
             self._reg_local_service(caller_id, service, service_api, caller_api)
         return ResponseFactory.service_reg(caller_id, service).pack()
+
+    @apivalidate(0, (is_service('service'), is_api('service_api')))
+    @overwrite
+    def unregisterService(self, caller_id, service, service_api):
+        """
+        Forked from ROSMasterHandler.
+        Unregister the caller as a provider of the specified service.
+        @param caller_id str: ROS caller id
+        @type  caller_id: str
+        @param service: Fully-qualified name of service
+        @type  service: str
+        @param service_api: API URI of service to unregister. Unregistration will only occur if current
+           registration matches.
+        @type  service_api: str
+        @return: (code, message, numUnregistered). Number of unregistrations (either 0 or 1).
+           If this is zero it means that the caller was not registered as a service provider.
+           The call still succeeds as the intended final state is reached.
+        @rtype: (int, str, int)
+        """
+        cfg = swcfg.services.get_config(service)
+        if not cfg.is_local_only():
+            self._unreg_remote_service(caller_id, service, service_api)
+        if not cfg.is_remote_only():
+            self._unreg_local_service(caller_id, service, service_api)
+        return ResponseFactory.service_unreg(caller_id, service).pack()
