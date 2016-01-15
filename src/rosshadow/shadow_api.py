@@ -11,7 +11,7 @@ import socket
 from rosshadow.logger import generate_handler as _getLogger
 from rosmaster.master_api import apivalidate
 from rosmaster.validators import is_service, is_api
-from rosmaster.registrations import RegistrationManager
+from rosilluminant.multireg import MultiRegistrationManager
 from rosmaster.threadpool import MarkedThreadPool
 from rosshadow.response import ResponseFactory
 from rosshadow.combinator import *
@@ -50,7 +50,7 @@ class GoblinShadowHandler(object):
         socket.setdefaulttimeout(timeout)
         self.thread_pool = MarkedThreadPool(num_works)
         self.ps_lock = threading.Condition(threading.Lock())
-        self.reg_manager = RegistrationManager(self.thread_pool)
+        self.reg_manager = MultiRegistrationManager(self.thread_pool)
         self.master_proxy = xmlrpclib.ServerProxy(master_uri)
         # TODO: support all local nodes
         self.services = self.reg_manager.services
