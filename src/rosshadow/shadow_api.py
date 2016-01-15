@@ -10,13 +10,14 @@ import xmlrpclib
 import socket
 
 from rosmaster.master_api import apivalidate
-from rosmaster.validators import is_service
+from rosmaster.validators import is_service, is_api
 from rosmaster.registrations import RegistrationManager
 from rosmaster.threadpool import MarkedThreadPool
 from rosshadow.response import ResponseFactory
 from rosshadow.combinator import *
 
 from rosshadow.configuration import load_shadow_config
+import rosshadow.configuration as shadowcfg
 
 NUM_WORKERS = 3  # number of threads we use to send publisher_update notifications
 
@@ -136,6 +137,15 @@ class GoblinShadowHandler(object):
     def _lookup_remote_service(self, service):
         return self.master_proxy.lookupService(self._caller_id, service)
 
+    def _reg_local_service(self, service, caller_id, caller_api, service_api):
+        print('-- Reg Local', service, service_api)
+        with self.ps_lock:
+            self.reg_manager.register_service(service, caller_id, caller_api, service_api)
+            mloginfo("+SERVICE [%s] %s %s", service, caller_id, caller_api)
+
+    def _reg_remote_service(self, *args):
+        r = self.master_proxy.registerService(*args)
+        print('-- Reg Remote', r)
 
     # Overwritten APIs
     @apivalidate(0, (is_service('service'),))
@@ -174,4 +184,31 @@ class GoblinShadowHandler(object):
         if success_uri(uri):
             return ResponseFactory.uri_found(service, uri).pack()
         else:
-            return ResponseFactory.unknown_service().pack()
+            return ResponseFactory.unknown_service(service).pack()
+
+    @apivalidate(0, (is_service('service'), is_api('service_api'), is_api('caller_api')))
+    @overwrite
+    def registerService(self, caller_id, service, service_api, caller_api):
+        """
+        Forked from ROSMasterHandler.
+        Register the caller as a provider of the specified service.
+        0. If service is `remote-only`, register with ROS Master
+        1. If Service is `local-only`, register with current shadow instance.
+        2. Otherwise, register with both sides.
+        @param caller_id str: ROS caller id
+        @type  caller_id: str
+        @param service: Fully-qualified name of service
+        @type  service: str
+        @param service_api: Service URI
+        @type  service_api: str
+        @param caller_api: XML-RPC URI of caller node
+        @type  caller_api: str
+        @return: (code, message, ignore)
+        @rtype: (int, str, int)
+        """
+        cfg = swcfg.services.get_config(service)
+        if not cfg.is_local_only():
+            self._reg_remote_service(caller_id, service, service_api, caller_api)
+        if not cfg.is_remote_only():
+            self._reg_local_service(caller_id, service, service_api, caller_api)
+        return ResponseFactory.service_reg(caller_id, service).pack()
