@@ -73,6 +73,12 @@ class ServiceConfiguration:
         else:
             return self._regex.match(name)
 
+    def is_remote_only(self):
+        return self.priority == REMOTE and not self.fallback
+
+    def is_local_only(self):
+        return self.priority == LOCAL and not self.fallback
+
     def __repr__(self):
         return '<ServiceConfiguration {}>'.format(self._regex.pattern)
 
