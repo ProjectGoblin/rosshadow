@@ -26,7 +26,7 @@ class Response(object):
 
 class ResponseFactory:
     @staticmethod
-    def unknown_service():
+    def unknown_service(service):
         return Response(-1,
                         '[Goblin][Shadow] Unknown service provider: {}'.format(service),
                         r'')
@@ -34,3 +34,7 @@ class ResponseFactory:
     @staticmethod
     def uri_found(key, uri):
         return Response(1, key, uri)
+
+    @staticmethod
+    def service_reg(caller_id, service):
+        return Response(1, "Registered [%s] as provider of [%s]"%(caller_id, service), 1)
