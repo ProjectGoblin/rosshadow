@@ -4,11 +4,11 @@ Gobline ROS Shadow API.
 
 from __future__ import print_function
 
-import logging
 import threading
 import xmlrpclib
 import socket
 
+from rosshadow.logger import generate_handler as _getLogger
 from rosmaster.master_api import apivalidate
 from rosmaster.validators import is_service, is_api
 from rosmaster.registrations import RegistrationManager
@@ -21,43 +21,11 @@ import rosshadow.configuration as shadowcfg
 
 NUM_WORKERS = 3  # number of threads we use to send publisher_update notifications
 
-# keep logging functions 
-_logger = logging.getLogger("goblin.shadow")
-
-LOG_API = False
-
-
-def mloginfo(msg, *args):
-    """
-    Info-level master log statements. These statements may be printed
-    to screen so they should be user-readable.
-    @param msg: Message string
-    @type  msg: str
-    @param args: arguments for msg if msg is a format string
-    """
-    # mloginfo is in core so that it is accessible to master and masterdata
-    _logger.info(msg, *args)
-
-
-def mlogwarn(msg, *args):
-    """
-    Warn-level master log statements. These statements may be printed
-    to screen so they should be user-readable.
-    @param msg: Message string
-    @type  msg: str    
-    @param args: arguments for msg if msg is a format string
-    """
-    # mloginfo is in core so that it is accessible to master and masterdata
-    _logger.warn(msg, *args)
-    if args:
-        print("WARN: " + msg % args)
-    else:
-        print("WARN: " + str(msg))
-
-
 swcfg = load_shadow_config()
 
 METHODS = {}
+
+logger = _getLogger('Goblin::Shadow::API')
 
 
 def overwrite(fn):
@@ -113,15 +81,15 @@ class GoblinShadowHandler(object):
         """
         Dispatch not-covered method to original ROS Master
         """
-        print('-> {}{}'.format(method, params))
+        logger.info('Required: {}{}'.format(method, params))
         if method in METHODS:
-            print('--  LOCAL')
+            logger.debug('--  LOCAL')
             status, msg, value = METHODS[method](self, *params)
-            print('>>  LOCAL {}'.format((status, msg, value)))
+            logger.debug('>>  LOCAL {}'.format((status, msg, value)))
         else:
-            print('-- REMOTE @ {!r}'.format(getattr(self.master_proxy, method)))
+            logger.debug('-- REMOTE: {!r}'.format(getattr(self.master_proxy, method)))
             status, msg, value = getattr(self.master_proxy, method)(*params)
-            print('>> REMOTE {}'.format((status, msg, value)))
+            logger.debug('>> REMOTE: {}'.format((status, msg, value)))
         return status, msg, value
 
     def is_running(self):
@@ -138,14 +106,14 @@ class GoblinShadowHandler(object):
         return self.master_proxy.lookupService(self._caller_id, service)
 
     def _reg_local_service(self, service, caller_id, caller_api, service_api):
-        print('-- Reg Local', service, service_api)
+        logger.info('-- Reg Local {} {}'.format(service, service_api))
         with self.ps_lock:
             self.reg_manager.register_service(service, caller_id, caller_api, service_api)
-            mloginfo("+SERVICE [%s] %s %s", service, caller_id, caller_api)
+            logger.info("+SERVICE [%s] %s %s", service, caller_id, caller_api)
 
     def _reg_remote_service(self, *args):
         r = self.master_proxy.registerService(*args)
-        print('-- Reg Remote', r)
+        logger.info('-- Reg Remote {}'.format(r))
 
     def _unreg_local_service(self, caller_id, service, service_api):
         with self.ps_lock:
@@ -153,7 +121,7 @@ class GoblinShadowHandler(object):
 
     def _unreg_remote_service(self, *args):
         r = self.master_proxy.unregisterService(*args)
-        print('-- Reg Remote', r)
+        logger.info('-- Unreg Remote {}'.format(r))
 
     # Overwritten APIs
     @apivalidate(0, (is_service('service'),))
