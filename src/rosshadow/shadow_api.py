@@ -11,7 +11,7 @@ import socket
 from rosshadow.logger import generate_handler as _getLogger
 from rosmaster.master_api import apivalidate
 from rosmaster.validators import is_service, is_api
-from rosilluminant.multireg import MultiRegistrationManager
+from illuminant.multireg import MultiRegistrationManager
 from rosmaster.threadpool import MarkedThreadPool
 from rosshadow.response import ResponseFactory
 from rosshadow.combinator import *
