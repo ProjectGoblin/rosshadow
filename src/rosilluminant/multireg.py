@@ -77,7 +77,7 @@ class ServiceHeap:
         return len(self.heap)
 
     def __nonzero__(self):
-        return len(self.heap) == 0
+        return len(self.heap) != 0
 
 
 class MultiRegistrations(Registrations):
@@ -169,9 +169,7 @@ class MultiRegistrations(Registrations):
         service_api = None
         heap = self.service_api_map[service]
         if heap:  # if not empty, return LRU instance and update the heap
-            service_api = heap[0].service_api
-            heap[0].count()
-            heapq.heapify(heap)
+            _, service_api = heap.minimal_update()
         return service_api
 
 
