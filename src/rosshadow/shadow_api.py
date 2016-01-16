@@ -13,7 +13,7 @@ from rosmaster.master_api import apivalidate
 from rosmaster.validators import is_service, is_api
 from illuminant.multireg import MultiRegistrationManager
 from rosmaster.threadpool import MarkedThreadPool
-from rosshadow.response import ResponseFactory
+from goblin.xmlrpc.response import ResponseFactory
 from rosshadow.combinator import *
 
 from rosshadow.configuration import load_shadow_config
