@@ -103,7 +103,7 @@ class GoblinShadowHandler(object):
         return uri
 
     def _lookup_remote_service(self, service):
-        return self.master_proxy.lookupService(self._caller_id, service)
+        return self.master_proxy.lookupService(self._caller_id, service)[2]
 
     def _reg_local_service(self, caller_id, service, service_api, caller_api):
         logger.info('-- Reg Local {} {}'.format(service, service_api))

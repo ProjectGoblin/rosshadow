@@ -1,5 +1,5 @@
 def success_uri(uri):
-    return uri is not None
+    return uri is not None and isinstance(uri, str) and len(uri) > 0
 
 
 def gen_eq_p(a, b):
