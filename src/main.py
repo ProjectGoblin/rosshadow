@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Command-line handler for Goblin Shadow Master"""
 
 import logging
